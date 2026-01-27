@@ -1,4 +1,4 @@
-package com.binbang.backend.entity;
+package com.binbang.backend.accommodation.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

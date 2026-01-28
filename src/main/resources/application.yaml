@@ -21,3 +21,9 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+# JWT 설정
+jwt:
+  secret: but-im-a-creep-im-a-weirdo-what-the-hell-am-i-doin-here-i-dont-belong-here
+  access-token-expiration: 1800000      # 30분 (밀리초)
+  refresh-token-expiration: 604800000  # 7일 (밀리초)

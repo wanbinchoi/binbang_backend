@@ -24,7 +24,8 @@ public class Member {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    // 소셜 로그인 때문에 password는 null 허용으로 바꿈
+    @Column(name = "password")
     private String password;
 
     @Column(name = "name", nullable = false)

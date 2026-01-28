@@ -21,6 +21,9 @@ public class AuthResponse {
 
     /**
      * 기본 응답 생성 (tokenType = "Bearer")
+     *
+     * 그니까 access token, refresh token, 만료기한 이거 3개만 정해주면
+     * 나머지 값을들 채워서 AuthResponse를 만들어줌
      */
     public static AuthResponse of(String accessToken, String refreshToken, Long expiresIn) {
         return AuthResponse.builder()

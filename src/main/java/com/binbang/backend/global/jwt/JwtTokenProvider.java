@@ -106,6 +106,7 @@ public class JwtTokenProvider {
     }
 
     // 토큰 파싱 (claims 추출)
+    // secret key로 인증 후 클레임들을 갖고옴
     private Claims parseClaims(String token){
         return Jwts.parser()
                 .verifyWith(secretKey)

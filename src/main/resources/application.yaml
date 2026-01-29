@@ -3,9 +3,9 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/binbang
-    username: user
-    password: password1234
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,12 +19,45 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          # Google 설정
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+
+          # Kakao 설정
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}  # 없으면 이 줄 삭제
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            scope:
+              - profile_nickname
+              - account_email
+            client-name: Kakao
+
+        # Provider 설정 (Kakao는 기본 제공 안 돼서 수동 설정 필요)
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 # JWT 설정
 jwt:
-  secret: but-im-a-creep-im-a-weirdo-what-the-hell-am-i-doin-here-i-dont-belong-here
+  secret: ${JWT_SECRET}
   access-token-expiration: 1800000      # 30분 (밀리초)
   refresh-token-expiration: 604800000  # 7일 (밀리초)
 

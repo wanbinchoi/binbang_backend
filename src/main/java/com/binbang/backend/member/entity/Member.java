@@ -1,10 +1,7 @@
 package com.binbang.backend.member.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -24,14 +21,13 @@ public class Member {
     @Column(name = "email", unique = true, nullable = false)
     private String email;
 
-    // 소셜 로그인 때문에 password는 null 허용으로 바꿈
     @Column(name = "password")
     private String password;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "phone", nullable = false)
+    @Column(name = "phone")
     private String phone;
 
     @Enumerated(EnumType.STRING)
@@ -42,11 +38,23 @@ public class Member {
     @Column(name = "status")
     private MemberStatus status = MemberStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", nullable = false)
+    private ProviderType provider = ProviderType.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist
     public void onCreate(){
         createdAt = LocalDateTime.now();
+    }
+
+    // 소셜 로그인용 정보 업데이트 메서드
+    public void updateFromOAuth2(String name) {
+        this.name = name;
     }
 }

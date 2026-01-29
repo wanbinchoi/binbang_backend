@@ -7,6 +7,10 @@ import com.binbang.backend.member.dto.response.AuthResponse;
 import com.binbang.backend.member.entity.Member;
 import com.binbang.backend.member.entity.MemberRole;
 import com.binbang.backend.member.entity.MemberStatus;
+import com.binbang.backend.member.exception.DuplicateEmailException;
+import com.binbang.backend.member.exception.InvalidPasswordException;
+import com.binbang.backend.member.exception.InvalidTokenException;
+import com.binbang.backend.member.exception.MemberNotFoundException;
 import com.binbang.backend.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.TimeUnit;
+
+/**
+ * - 기존 RuntimeException 대신 내가 만든 CustomException 적용
+ * 왜냐? 에러 종류를 명확하게 구분
+ *       적절한 HTTP 상태 코드 사용
+ */
 
 @Slf4j
 @Service
@@ -34,7 +44,7 @@ public class AuthService {
     public String signup(SignupRequest request){
         // 1. 이메일 중복 체크
         if(memberRepository.existsByEmail(request.getEmail())){
-            throw new RuntimeException("이미 사용중인 이메일입니다");
+            throw new DuplicateEmailException(request.getEmail());
         }
 
         // 2. Member 엔티티 생성
@@ -59,11 +69,11 @@ public class AuthService {
 
         // 1. 이메일로 회원 조회
         Member member = memberRepository.findByEmail(request.getEmail())
-                .orElseThrow(()->new RuntimeException("이메일 또는 비밀번호가 올바르지 않습니다."));
+                .orElseThrow(()->new MemberNotFoundException(request.getEmail()));
 
         // 2. 계정 상태 확인
         if(member.getStatus()!=MemberStatus.ACTIVE){
-            throw new RuntimeException("비활성화된 계정입니다.");
+            throw new InvalidPasswordException();
         }
 
         // 3. 비밀번호 검증
@@ -104,7 +114,7 @@ public class AuthService {
 
         // 1. Refresh Token 유효성 검증
         if(!jwtTokenProvider.validateToken(refreshToken)){
-            throw new RuntimeException("유요하지 않은 Refresh Token입니다.");
+            throw new InvalidTokenException("유요하지 않은 Refresh Token입니다.");
         }
 
         // 2. Refresh Token에서 email 추출
@@ -113,7 +123,7 @@ public class AuthService {
         // 3. Redis에 저장된 Refresh Token과 비교
         String storedRefreshToken = redisTemplate.opsForValue().get("RT:"+email);
         if(storedRefreshToken==null || !storedRefreshToken.equals(refreshToken)){
-            throw new RuntimeException("Refresh Token이 일치하지 않습니다");
+            throw new InvalidTokenException("Refresh Token이 일치하지 않습니다");
         }
 
         // 4. 회원 정보 조회

@@ -3,10 +3,7 @@ package com.binbang.backend.accommodation.entity;
 import com.binbang.backend.category.entity.Category;
 import com.binbang.backend.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 
 import java.time.LocalDateTime;
@@ -18,6 +15,7 @@ import java.time.LocalTime;
 @Setter
 @AllArgsConstructor
 @Table(name = "accommodation")
+@Builder
 public class Accommodation {
 
     @Id

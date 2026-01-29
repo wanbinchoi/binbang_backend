@@ -1,6 +1,8 @@
 package com.binbang.backend.global.security;
 
 import com.binbang.backend.global.jwt.JwtAuthenticationFilter;
+import com.binbang.backend.global.security.oauth2.CustomOAuth2UserService;
+import com.binbang.backend.global.security.oauth2.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -45,7 +49,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth->auth
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/test/**"
+                                "/test/**",
+                                "/login/oauth2/**"  //소셜로그인 엔드포인트 허용
                         ).permitAll()
                         // 나머지는 다 허용
                         .anyRequest().authenticated()
@@ -54,6 +59,12 @@ public class SecurityConfig {
                 .formLogin(form->form.disable())
                 // HTTP Basic 인증 비활성화
                 .httpBasic(basic->basic.disable())
+                // OAuth2 로그인 설정 추가
+                .oauth2Login(o->o
+                        .userInfoEndpoint(end->end
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
+                )
                 // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);

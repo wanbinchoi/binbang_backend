@@ -23,7 +23,6 @@ public class AccommodationPolicy {
     @JoinColumn(name = "accommodation_id", nullable = false)
     private Accommodation accommodation;
 
-    @Lob
-    @Column(name = "policies", columnDefinition = "JSON")
+    @Column(name = "policies", columnDefinition = "TEXT")
     private String policies;
 }

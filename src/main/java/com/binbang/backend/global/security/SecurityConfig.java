@@ -50,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/test/**",
-                                "/login/oauth2/**"  //소셜로그인 엔드포인트 허용
+                                "/login/oauth2/**",  //소셜로그인 엔드포인트 허용
+                                "/health"
                         ).permitAll()
                         // 나머지는 다 허용
                         .anyRequest().authenticated()

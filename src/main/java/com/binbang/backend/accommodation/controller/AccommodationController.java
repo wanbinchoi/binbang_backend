@@ -1,16 +1,19 @@
 package com.binbang.backend.accommodation.controller;
 
+import com.binbang.backend.accommodation.dto.AccommodationListResponse;
 import com.binbang.backend.accommodation.dto.AccommodationRegisterDto;
 import com.binbang.backend.accommodation.dto.AccommodationResponse;
 import com.binbang.backend.accommodation.service.AccommodationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/accommodation")
@@ -22,5 +25,23 @@ public class AccommodationController {
     @PostMapping("/register")
     public ResponseEntity<AccommodationResponse> register(@Valid @RequestBody AccommodationRegisterDto dto){
         return ResponseEntity.status(HttpStatus.CREATED).body(accommodationService.register(dto));
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<Page<AccommodationListResponse>> getList(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Integer minBedrooms,
+            @RequestParam(required = false) Integer minBathrooms,
+            @RequestParam(required = false) Integer minBeds,
+            @RequestParam(required = false) Boolean petAllowed,
+            @RequestParam(required = false) Boolean parkingAvailable,
+            @RequestParam(required = false) Boolean hasBbq,
+            @RequestParam(required = false) Boolean hasWifi,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable){
+        Page<AccommodationListResponse> result = accommodationService.getList(
+                categoryId, minBedrooms, minBathrooms, minBeds,
+                petAllowed, parkingAvailable, hasBbq, hasWifi,
+                pageable);
+        return ResponseEntity.ok(result);
     }
 }

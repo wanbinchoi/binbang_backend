@@ -58,6 +58,7 @@ public class Accommodation {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
+    @Builder.Default
     private AccommodationStatus status = AccommodationStatus.OPEN;
 
     @Column(name = "created_at")

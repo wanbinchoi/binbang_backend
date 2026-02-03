@@ -61,3 +61,12 @@ jwt:
   access-token-expiration: 1800000      # 30분 (밀리초)
   refresh-token-expiration: 604800000  # 7일 (밀리초)
 
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: image-binbang

@@ -1,5 +1,6 @@
 package com.binbang.backend.accommodation.dto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,6 +39,10 @@ public class AccommodationRegisterDto {
 
     @NotNull(message = "카테고리를 등록해주세요.")
     private Long categoryId;
+
+    @NotNull(message = "시설 정보를 입력하세요.")
+    @Valid
+    private AccommodationFacilityDto facility;
 
     @NotNull(message = "정책 정보를 입력하세요.")
     @Valid

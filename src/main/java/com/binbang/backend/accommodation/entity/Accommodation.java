@@ -67,4 +67,8 @@ public class Accommodation {
     public void onCreate(){
         createdAt = LocalDateTime.now();
     }
+
+    @OneToOne(mappedBy = "accommodation", fetch = FetchType.LAZY)
+    private AccommodationFacility facility;
+
 }

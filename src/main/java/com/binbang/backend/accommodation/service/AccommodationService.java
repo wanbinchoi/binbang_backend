@@ -3,18 +3,22 @@ package com.binbang.backend.accommodation.service;
 import com.binbang.backend.accommodation.dto.AccommodationFacilityDto;
 import com.binbang.backend.accommodation.dto.AccommodationListResponse;
 import com.binbang.backend.accommodation.entity.AccommodationFacility;
+import com.binbang.backend.accommodation.entity.AccommodationImage;
 import com.binbang.backend.accommodation.entity.AccommodationPolicy;
+import com.binbang.backend.accommodation.exception.AccommodationNotFoundException;
 import com.binbang.backend.accommodation.exception.CategoryNotFoundException;
 import com.binbang.backend.accommodation.dto.AccommodationRegisterDto;
 import com.binbang.backend.accommodation.dto.AccommodationResponse;
 import com.binbang.backend.accommodation.entity.Accommodation;
 import com.binbang.backend.accommodation.repository.AccommodationFacilityRepository;
+import com.binbang.backend.accommodation.repository.AccommodationImageRepository;
 import com.binbang.backend.accommodation.repository.AccommodationPolicyRepository;
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
 import com.binbang.backend.accommodation.specification.AccommodationSpecification;
 import com.binbang.backend.category.entity.Category;
 import com.binbang.backend.category.repository.CategoryRepository;
 import com.binbang.backend.global.exception.CustomException;
+import com.binbang.backend.global.service.S3Service;
 import com.binbang.backend.member.entity.Member;
 import com.binbang.backend.member.exception.MemberNotFoundException;
 import com.binbang.backend.member.repository.MemberRepository;
@@ -27,8 +31,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -40,7 +46,9 @@ public class AccommodationService {
     private final MemberRepository memberRepository;
     private final AccommodationFacilityRepository facilityRepository;
     private final AccommodationPolicyRepository policyRepository;
+    private final AccommodationImageRepository accommodationImageRepository;
     private final ObjectMapper objectMapper;
+    private final S3Service s3Service;
 
     public Member getCurrentMember(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -102,6 +110,33 @@ public class AccommodationService {
         return AccommodationResponse.from(accommodation);
     }
 
+    @Transactional
+    public void uploadImages(Long accommodationId, List<MultipartFile> images) throws IOException{
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+                .orElseThrow(()-> new AccommodationNotFoundException(accommodationId));
+
+        Member currentMember = getCurrentMember();
+
+        if(!accommodation.getMember().getMemberId().equals(currentMember.getMemberId())){
+            throw new CustomException(HttpStatus.FORBIDDEN, "권한이 없습니다.");
+        }
+
+        for(int i = 0 ; i < images.size() ; i++){
+            MultipartFile image = images.get(i);
+
+            // S3에 업로드
+            String imageUrl = s3Service.upLoadFile(image);
+
+            //AccommodationImage 엔티티 생성
+            AccommodationImage accommodationImage = new AccommodationImage();
+            accommodationImage.setAccommodation(accommodation);
+            accommodationImage.setImageUrl(imageUrl);
+            accommodationImage.setSortOrder(i);
+
+            //DB 저장
+            accommodationImageRepository.save(accommodationImage);
+        }
+    }
     //전체 조회
 //    public Page<AccommodationListResponse> getList(Pageable pageable){
 //        Page<Accommodation> accommodationPage = accommodationRepository.findAll(pageable);

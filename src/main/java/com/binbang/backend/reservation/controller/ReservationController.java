@@ -23,7 +23,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/reservations")
+@RequestMapping("/api/reservation")
 @RequiredArgsConstructor
 public class ReservationController {
 
@@ -32,7 +32,7 @@ public class ReservationController {
     /**
      * 예약 생성
      *
-     * POST /api/reservations
+     * POST /api/reservation
      *
      * @param email 로그인한 회원 정보 (Spring Security)
      * @param request 예약 생성 요청
@@ -55,8 +55,8 @@ public class ReservationController {
     /**
      * 내 예약 목록 조회 (게스트용)
      *
-     * GET /api/reservations/my
-     * GET /api/reservations/my?status=RESERVED
+     * GET /api/reservation/my
+     * GET /api/reservation/my?status=RESERVED
      *
      * @param email 로그인한 회원 정보
      * @param status 예약 상태 (선택사항)
@@ -85,7 +85,7 @@ public class ReservationController {
     /**
      * 예약 상세 조회
      *
-     * GET /api/reservations/{reservationId}
+     * GET /api/reservation/{reservationId}
      *
      * @param email 로그인한 회원 정보
      * @param reservationId 예약 ID
@@ -106,7 +106,7 @@ public class ReservationController {
     /**
      * 예약 취소
      *
-     * DELETE /api/reservations/{reservationId}
+     * DELETE /api/reservation/{reservationId}
      *
      * @param email 로그인한 회원 정보
      * @param reservationId 취소할 예약 ID
@@ -127,8 +127,8 @@ public class ReservationController {
     /**
      * 호스트용 예약 관리 - 내 숙소의 예약 목록 조회
      *
-     * GET /api/reservations/host/{accommodationId}
-     * GET /api/reservations/host/{accommodationId}?status=RESERVED
+     * GET /api/reservation/host/{accommodationId}
+     * GET /api/reservation/host/{accommodationId}?status=RESERVED
      *
      * @param email 로그인한 호스트 정보
      * @param accommodationId 숙소 ID
@@ -160,7 +160,7 @@ public class ReservationController {
     /**
      * 예약 완료 처리 (수동)
      *
-     * PUT /api/reservations/{reservationId}/complete
+     * PUT /api/reservation/{reservationId}/complete
      *
      * @param reservationId 완료 처리할 예약 ID
      * @return 완료 처리된 예약 정보
@@ -179,7 +179,7 @@ public class ReservationController {
     /**
      * 체크아웃 날짜 지난 예약 일괄 완료 처리 (관리자용)
      *
-     * PUT /api/reservations/complete-expired
+     * PUT /api/reservation/complete-expired
      *
      * @return 완료 처리된 예약 개수
      */

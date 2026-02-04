@@ -5,6 +5,7 @@ import com.binbang.backend.accommodation.entity.AccommodationStatus;
 import com.binbang.backend.accommodation.exception.AccommodationNotFoundException;
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
 import com.binbang.backend.global.exception.CustomException;
+import com.binbang.backend.global.service.EmailService;
 import com.binbang.backend.member.entity.Member;
 import com.binbang.backend.member.exception.MemberNotFoundException;
 import com.binbang.backend.member.repository.MemberRepository;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +39,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final AccommodationRepository accommodationRepository;
+    private final EmailService emailService;
 
     /**
      * 예약 생성
@@ -73,12 +76,15 @@ public class ReservationService {
         reservation.setCheckOutDate(request.getCheckOutDate());
         reservation.setPersonnel(request.getGuestCount());
         reservation.setTotalPrice(totalPrice);
+        reservation.setReservedAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.RESERVED);
-
-        //accommodationRepository.updateStatusById(request.getAccommodationId(), AccommodationStatus.RESERVED);
 
         // 6. 저장
         Reservation saveReservation = reservationRepository.save(reservation);
+
+        // 이메일 발송
+        emailService.sendNewReservationNotification(saveReservation);
+        emailService.sendReservationConfirmation(saveReservation);
 
         // 7. 응답 반환
         return ReservationResponse.from(saveReservation);
@@ -176,6 +182,9 @@ public class ReservationService {
 
         // 4. 예약 취소
         reservation.setStatus(ReservationStatus.CANCELLED);
+
+        // 취소 이메일 발송
+        emailService.sendCancellationNotification(reservation);
 
         log.info("예약 취소 완료: email={}, reservationId={}", email, reservationId);
 

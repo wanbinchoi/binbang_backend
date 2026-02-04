@@ -3,10 +3,7 @@ package com.binbang.backend.reservation.entity;
 import com.binbang.backend.accommodation.entity.Accommodation;
 import com.binbang.backend.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,6 +34,9 @@ public class Reservation {
 
     @Column(name = "check_out_date", nullable = false)
     private LocalDate checkOutDate;
+
+    @Column(name="personnel", nullable = false)
+    private Integer personnel;
 
     @Column(name = "total_price", nullable = false)
     private Long totalPrice;

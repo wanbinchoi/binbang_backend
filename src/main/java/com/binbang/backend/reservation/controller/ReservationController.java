@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,7 +34,7 @@ public class ReservationController {
      *
      * POST /api/reservations
      *
-     * @param userDetails 로그인한 회원 정보 (Spring Security)
+     * @param email 로그인한 회원 정보 (Spring Security)
      * @param request 예약 생성 요청
      * @return 생성된 예약 정보
      */
@@ -59,7 +58,7 @@ public class ReservationController {
      * GET /api/reservations/my
      * GET /api/reservations/my?status=RESERVED
      *
-     * @param userDetails 로그인한 회원 정보
+     * @param email 로그인한 회원 정보
      * @param status 예약 상태 (선택사항)
      * @return 내 예약 목록
      */
@@ -88,7 +87,7 @@ public class ReservationController {
      *
      * GET /api/reservations/{reservationId}
      *
-     * @param userDetails 로그인한 회원 정보
+     * @param email 로그인한 회원 정보
      * @param reservationId 예약 ID
      * @return 예약 상세 정보
      */
@@ -109,7 +108,7 @@ public class ReservationController {
      *
      * DELETE /api/reservations/{reservationId}
      *
-     * @param userDetails 로그인한 회원 정보
+     * @param email 로그인한 회원 정보
      * @param reservationId 취소할 예약 ID
      * @return 취소된 예약 정보
      */
@@ -131,7 +130,7 @@ public class ReservationController {
      * GET /api/reservations/host/{accommodationId}
      * GET /api/reservations/host/{accommodationId}?status=RESERVED
      *
-     * @param userDetails 로그인한 호스트 정보
+     * @param email 로그인한 호스트 정보
      * @param accommodationId 숙소 ID
      * @param status 예약 상태 (선택사항)
      * @return 해당 숙소의 예약 목록
@@ -147,13 +146,13 @@ public class ReservationController {
 
         List<ReservationListResponse> reservations;
 
-//        if (status != null) {
-//            // 특정 상태의 예약만 조회
-//            reservations = reservationService.getHostReservationsByStatus(email, accommodationId, status);
-//        } else {
-//            // 전체 예약 조회
+        if (status != null) {
+            // 특정 상태의 예약만 조회
+            reservations = reservationService.getHostReservationsByStatus(email, accommodationId, status);
+        } else {
+            // 전체 예약 조회
             reservations = reservationService.getHostReservations(email, accommodationId);
-//        }
+        }
 
         return ResponseEntity.ok(reservations);
     }

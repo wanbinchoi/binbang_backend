@@ -1,5 +1,6 @@
 package com.binbang.backend.reservation.repository;
 
+import com.binbang.backend.accommodation.entity.AccommodationStatus;
 import com.binbang.backend.reservation.entity.Reservation;
 import com.binbang.backend.reservation.entity.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -69,6 +70,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("checkOutDate") LocalDate checkOutDate,
             @Param("status") ReservationStatus status
     );
+
+    // 특정 숙소에서 status에 따라 조회
+    List<Reservation>  findByAccommodation_AccommodationIdAndStatus(Long accommodationId, ReservationStatus status);
 
     /**
      * 특정 회원의 예약 개수 조회

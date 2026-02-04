@@ -71,8 +71,11 @@ public class ReservationService {
         reservation.setAccommodation(accommodation);
         reservation.setCheckInDate(request.getCheckInDate());
         reservation.setCheckOutDate(request.getCheckOutDate());
+        reservation.setPersonnel(request.getGuestCount());
         reservation.setTotalPrice(totalPrice);
         reservation.setStatus(ReservationStatus.RESERVED);
+
+        //accommodationRepository.updateStatusById(request.getAccommodationId(), AccommodationStatus.RESERVED);
 
         // 6. 저장
         Reservation saveReservation = reservationRepository.save(reservation);
@@ -221,32 +224,32 @@ public class ReservationService {
      * @param status 예약 상태
      * @return 특정 상태의 예약 목록
      */
-//    @Transactional
-//    public List<ReservationListResponse> getHostReservationsByStatus(
-//            String email, Long accommodationId, ReservationStatus status) {
-//
-//        Long hostMemberId = getMemberIdByEmail(email);
-//
-//        // 1. 숙소 조회 및 권한 체크
-//        Accommodation accommodation = accommodationRepository.findById(accommodationId)
-//                .orElseThrow(() -> new AccommodationNotFoundException(accommodationId));
-//
-//        if (!accommodation.getMember().getMemberId().equals(hostMemberId)) {
-//            throw new CustomException(HttpStatus.FORBIDDEN,
-//                    "해당 숙소의 예약을 조회할 권한이 없습니다");
-//        }
-//
-//        // 2. 상태별 예약 조회
-//        List<Reservation> reservations = reservationRepository
-//                .findByAccommodation_AccommodationIdAndStatus(accommodationId, status);
-//
-//        log.info("호스트 예약 목록 조회 (상태별): email={}, accommodationId={}, status={}, count={}",
-//                email, accommodationId, status, reservations.size());
-//
-//        return reservations.stream()
-//                .map(ReservationListResponse::from)
-//                .collect(Collectors.toList());
-//    }
+    @Transactional
+    public List<ReservationListResponse> getHostReservationsByStatus(
+            String email, Long accommodationId, ReservationStatus status) {
+
+        Long hostMemberId = getMemberIdByEmail(email);
+
+        // 1. 숙소 조회 및 권한 체크
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+                .orElseThrow(() -> new AccommodationNotFoundException(accommodationId));
+
+        if (!accommodation.getMember().getMemberId().equals(hostMemberId)) {
+            throw new CustomException(HttpStatus.FORBIDDEN,
+                    "해당 숙소의 예약을 조회할 권한이 없습니다");
+        }
+
+        // 2. 상태별 예약 조회
+        List<Reservation> reservations = reservationRepository
+                .findByAccommodation_AccommodationIdAndStatus(accommodationId, status);
+
+        log.info("호스트 예약 목록 조회 (상태별): email={}, accommodationId={}, status={}, count={}",
+                email, accommodationId, status, reservations.size());
+
+        return reservations.stream()
+                .map(ReservationListResponse::from)
+                .collect(Collectors.toList());
+    }
 
     /**
      * 예약 완료 처리 (체크아웃 날짜가 지난 예약)

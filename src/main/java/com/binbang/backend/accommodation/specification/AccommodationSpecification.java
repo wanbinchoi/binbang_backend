@@ -98,8 +98,19 @@ public class AccommodationSpecification {
                 return null;
             }
             return criteriaBuilder.equal(
-                    root.get("facility").get("hasBbq"),
+                    root.get("facility").get("hasWifi"),
                     hasWifi
+            );
+        };
+    }
+    public static Specification<Accommodation> addressLike(String keyword){
+        return (root, query, criteriaBuilder) -> {
+            if (keyword == null) {
+                return null;
+            }
+            return criteriaBuilder.like(
+                    root.get("address"),
+                    "%" + keyword + "%"
             );
         };
     }

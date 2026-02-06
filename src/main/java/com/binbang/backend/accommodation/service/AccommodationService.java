@@ -185,6 +185,7 @@ public class AccommodationService {
             Boolean parkingAvailable,
             Boolean hasBbq,
             Boolean hasWifi,
+            String keyword,
             Pageable pageable
     ){
         //Specification 조합
@@ -196,7 +197,8 @@ public class AccommodationService {
                 .and(AccommodationSpecification.petAllowed(petAllowed))
                 .and(AccommodationSpecification.parkingAvailable(parkingAvailable))
                 .and(AccommodationSpecification.hasBbq(hasBbq))
-                .and(AccommodationSpecification.hasWifi(hasWifi));
+                .and(AccommodationSpecification.hasWifi(hasWifi))
+                .and(AccommodationSpecification.addressLike(keyword));
 
         //위에서 만든 조건으로 페이징처리하여 조회
         Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);

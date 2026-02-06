@@ -1,6 +1,7 @@
 package com.binbang.backend.accommodation.entity;
 
 import com.binbang.backend.category.entity.Category;
+import com.binbang.backend.category.entity.Region;
 import com.binbang.backend.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +31,10 @@ public class Accommodation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "region_id", nullable = false)
+    private Region region;
 
     @Column(name = "name", nullable = false)
     private String name;

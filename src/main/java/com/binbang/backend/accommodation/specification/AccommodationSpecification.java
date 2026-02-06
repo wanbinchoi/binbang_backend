@@ -114,4 +114,15 @@ public class AccommodationSpecification {
             );
         };
     }
+    public static Specification<Accommodation> hasRegion(Long regionId){
+        return (root, query,criteriaBuilder) -> {
+            if(regionId == null){
+                return null;
+            }
+            return criteriaBuilder.equal(
+                    root.get("region").get("regionId"),
+                    regionId
+            );
+        };
+    }
 }

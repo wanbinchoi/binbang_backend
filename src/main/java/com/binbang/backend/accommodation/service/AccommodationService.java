@@ -77,6 +77,7 @@ public class AccommodationService {
                 .longitude(dto.getLongitude())
                 .description(dto.getDescription())
                 .category(category)
+                .region(region)
                 .build();
 
         accommodationRepository.save(accommodation);
@@ -186,6 +187,7 @@ public class AccommodationService {
             Boolean hasBbq,
             Boolean hasWifi,
             String keyword,
+            Long regionId,
             Pageable pageable
     ){
         //Specification 조합
@@ -198,7 +200,8 @@ public class AccommodationService {
                 .and(AccommodationSpecification.parkingAvailable(parkingAvailable))
                 .and(AccommodationSpecification.hasBbq(hasBbq))
                 .and(AccommodationSpecification.hasWifi(hasWifi))
-                .and(AccommodationSpecification.addressLike(keyword));
+                .and(AccommodationSpecification.addressLike(keyword))
+                .and(AccommodationSpecification.hasRegion(regionId));
 
         //위에서 만든 조건으로 페이징처리하여 조회
         Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);

@@ -16,7 +16,9 @@ import com.binbang.backend.accommodation.repository.AccommodationPolicyRepositor
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
 import com.binbang.backend.accommodation.specification.AccommodationSpecification;
 import com.binbang.backend.category.entity.Category;
+import com.binbang.backend.category.entity.Region;
 import com.binbang.backend.category.repository.CategoryRepository;
+import com.binbang.backend.category.repository.RegionRepository;
 import com.binbang.backend.global.exception.CustomException;
 import com.binbang.backend.global.service.S3Service;
 import com.binbang.backend.member.entity.Member;
@@ -47,6 +49,7 @@ public class AccommodationService {
     private final AccommodationFacilityRepository facilityRepository;
     private final AccommodationPolicyRepository policyRepository;
     private final AccommodationImageRepository accommodationImageRepository;
+    private final RegionRepository regionRepository;
     private final ObjectMapper objectMapper;
     private final S3Service s3Service;
 
@@ -65,6 +68,8 @@ public class AccommodationService {
 
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException(dto.getCategoryId()));
+
+        Region region = regionRepository.findByName(dto.getRegionName());
 
         Accommodation accommodation = Accommodation.builder()
                 .member(member)

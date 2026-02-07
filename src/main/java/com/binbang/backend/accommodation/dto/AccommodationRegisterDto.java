@@ -47,4 +47,7 @@ public class AccommodationRegisterDto {
     @NotNull(message = "정책 정보를 입력하세요.")
     @Valid
     private AccommodationPolicyDto policy;
+
+    @NotBlank(message = "지역 정보를 입력하세요.")
+    private String regionName;
 }

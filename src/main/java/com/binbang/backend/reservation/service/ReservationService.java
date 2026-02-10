@@ -367,6 +367,7 @@ public class ReservationService {
             throw new AccommodationNotAvailableException();
         }
 
+        // 4. 내꺼는 예약 못함
         if(accommodation.getMember().getMemberId().equals(member.getMemberId())){
             throw new CustomException(HttpStatus.BAD_REQUEST,"자신의 숙소는 예약할 수 없습니다");
         }
@@ -392,12 +393,7 @@ public class ReservationService {
      * 총 가격 계산
      */
     private Long calculateTotalPrice(Long pricePerNight, LocalDate checkInDate, LocalDate checkOutDate){
-        long nights = ChronoUnit.DAYS.between(checkInDate,checkOutDate);
-
-        // 총 가격 계산
-        Long totalPrice = pricePerNight*nights;
-
-        return totalPrice;
+        return pricePerNight*ChronoUnit.DAYS.between(checkInDate,checkOutDate);
     }
 
     /**

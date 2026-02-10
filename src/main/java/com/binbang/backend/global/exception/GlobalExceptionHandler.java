@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
     // CustomException 처리
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException ex){
-        log.error("Custom exception에 걸렸네요: {}",ex.getMessage());
+        log.error(ex.getMessage());
 
         ErrorResponse response = ErrorResponse.builder()
                 .status(ex.getHttpStatus().value())

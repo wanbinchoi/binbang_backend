@@ -4,8 +4,10 @@ import com.binbang.backend.accommodation.entity.Accommodation;
 import com.binbang.backend.accommodation.entity.AccommodationStatus;
 import com.binbang.backend.accommodation.exception.AccommodationNotFoundException;
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
+import com.binbang.backend.global.dto.EmailMessage;
+import com.binbang.backend.global.dto.NotificationMessage;
 import com.binbang.backend.global.exception.CustomException;
-import com.binbang.backend.global.service.EmailService;
+import com.binbang.backend.global.service.MessageProducer;
 import com.binbang.backend.member.entity.Member;
 import com.binbang.backend.member.exception.MemberNotFoundException;
 import com.binbang.backend.member.repository.MemberRepository;
@@ -30,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Service
@@ -39,7 +42,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final AccommodationRepository accommodationRepository;
-    private final EmailService emailService;
+    private final MessageProducer messageProducer;
 
     /**
      * 예약 생성
@@ -76,15 +79,20 @@ public class ReservationService {
         reservation.setCheckOutDate(request.getCheckOutDate());
         reservation.setPersonnel(request.getGuestCount());
         reservation.setTotalPrice(totalPrice);
-        reservation.setReservedAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.RESERVED);
 
         // 6. 저장
         Reservation saveReservation = reservationRepository.save(reservation);
 
-        // 이메일 발송
-        emailService.sendNewReservationNotification(saveReservation);
-        emailService.sendReservationConfirmation(saveReservation);
+        // 게스트에게 예약 확인
+        EmailMessage guestEmail = buildGuestConfirmationEmail(saveReservation);
+        NotificationMessage guestNotification = buildGuestConfirmationNotification(saveReservation);
+        messageProducer.sendReservationConfirmation(guestEmail, guestNotification);
+
+        // 호스트에게 새 예약 알림
+        EmailMessage hostEmail = buildHostNewReservationEmail(saveReservation);
+        NotificationMessage hostNotification = buildHostNewReservationNotification(saveReservation);
+        messageProducer.sendNewReservationNotification(hostEmail, hostNotification);
 
         // 7. 응답 반환
         return ReservationResponse.from(saveReservation);
@@ -183,8 +191,15 @@ public class ReservationService {
         // 4. 예약 취소
         reservation.setStatus(ReservationStatus.CANCELLED);
 
-        // 취소 이메일 발송
-        emailService.sendCancellationNotification(reservation);
+        // 호스트에게 취소 알림
+        EmailMessage hostCancelEmail = buildHostCancellationEmail(reservation);
+        NotificationMessage hostCancelNotification = buildHostCancellationNotification(reservation);
+        messageProducer.sendCancellationNotification(hostCancelEmail, hostCancelNotification);
+
+        // 게스트에게 취소 확인
+        EmailMessage guestCancelEmail = buildGuestCancellationEmail(reservation);
+        NotificationMessage guestCancelNotification = buildGuestCancellationNotification(reservation);
+        messageProducer.sendCancellationNotification(guestCancelEmail, guestCancelNotification);
 
         log.info("예약 취소 완료: email={}, reservationId={}", email, reservationId);
 
@@ -395,6 +410,141 @@ public class ReservationService {
         return memberRepository.findByEmail(email)
                 .orElseThrow(() -> new MemberNotFoundException(email))
                 .getMemberId();
+    }
+
+    // 게스트용 예약 확인 이메일 메시지 생성
+    private EmailMessage buildGuestConfirmationEmail(Reservation reservation){
+        return EmailMessage.builder()
+                .emailType(EmailMessage.EmailType.RESERVATION_CONFIRMATION)
+                .to(reservation.getMember().getEmail())
+                .subject("[빈방] 예약이 완료되었습니다 - "+reservation.getAccommodation())
+                .reservationId(reservation.getReservationId())
+                .accommodationName(reservation.getAccommodation().getName())
+                .guestName(reservation.getMember().getName())
+                .hostName(reservation.getAccommodation().getMember().getName())
+                .checkInDate(formatDate(reservation.getCheckInDate()))
+                .checkOutDate(formatDate(reservation.getCheckOutDate()))
+                .totalPrice(reservation.getTotalPrice())
+                .guestCount(reservation.getPersonnel())
+                .build();
+    }
+
+    /**
+     * 게스트용 예약 확인 알림 메시지 생성
+     */
+    private NotificationMessage buildGuestConfirmationNotification(Reservation reservation) {
+        return NotificationMessage.builder()
+                .notificationType(NotificationMessage.NotificationType.RESERVATION_CONFIRMED)
+                .memberId(reservation.getMember().getMemberId())
+                .title("예약이 완료되었습니다")
+                .content(reservation.getAccommodation().getName() + " 예약이 확정되었습니다")
+                .reservationId(reservation.getReservationId())
+                .accommodationId(reservation.getAccommodation().getAccommodationId())
+                .build();
+    }
+
+    /**
+     * 호스트용 새 예약 알림 이메일 메시지 생성
+     */
+    private EmailMessage buildHostNewReservationEmail(Reservation reservation) {
+        return EmailMessage.builder()
+                .emailType(EmailMessage.EmailType.NEW_RESERVATION_NOTIFICATION)
+                .to(reservation.getAccommodation().getMember().getEmail())
+                .subject("[빈방] 새로운 예약이 접수되었습니다 - " + reservation.getAccommodation().getName())
+                .reservationId(reservation.getReservationId())
+                .accommodationName(reservation.getAccommodation().getName())
+                .guestName(reservation.getMember().getName())
+                .hostName(reservation.getAccommodation().getMember().getName())
+                .checkInDate(formatDate(reservation.getCheckInDate()))
+                .checkOutDate(formatDate(reservation.getCheckOutDate()))
+                .totalPrice(reservation.getTotalPrice())
+                .guestCount(reservation.getPersonnel())
+                .build();
+    }
+
+    /**
+     * 호스트용 새 예약 알림 메시지 생성
+     */
+    private NotificationMessage buildHostNewReservationNotification(Reservation reservation) {
+        return NotificationMessage.builder()
+                .notificationType(NotificationMessage.NotificationType.NEW_RESERVATION)
+                .memberId(reservation.getAccommodation().getMember().getMemberId())
+                .title("새로운 예약이 접수되었습니다")
+                .content(reservation.getMember().getName() + "님이 " +
+                        reservation.getAccommodation().getName() + "을 예약했습니다")
+                .reservationId(reservation.getReservationId())
+                .accommodationId(reservation.getAccommodation().getAccommodationId())
+                .build();
+    }
+
+    /**
+     * 호스트용 예약 취소 이메일 메시지 생성
+     */
+    private EmailMessage buildHostCancellationEmail(Reservation reservation) {
+        return EmailMessage.builder()
+                .emailType(EmailMessage.EmailType.CANCELLATION_NOTIFICATION)
+                .to(reservation.getAccommodation().getMember().getEmail())
+                .subject("[빈방] 예약이 취소되었습니다 - " + reservation.getAccommodation().getName())
+                .reservationId(reservation.getReservationId())
+                .accommodationName(reservation.getAccommodation().getName())
+                .guestName(reservation.getMember().getName())
+                .hostName(reservation.getAccommodation().getMember().getName())
+                .checkInDate(formatDate(reservation.getCheckInDate()))
+                .checkOutDate(formatDate(reservation.getCheckOutDate()))
+                .totalPrice(reservation.getTotalPrice())
+                .guestCount(reservation.getPersonnel())
+                .build();
+    }
+
+    /**
+     * 호스트용 예약 취소 알림 메시지 생성
+     */
+    private NotificationMessage buildHostCancellationNotification(Reservation reservation) {
+        return NotificationMessage.builder()
+                .notificationType(NotificationMessage.NotificationType.RESERVATION_CANCELLED)
+                .memberId(reservation.getAccommodation().getMember().getMemberId())
+                .title("예약이 취소되었습니다")
+                .content(reservation.getMember().getName() + "님이 예약을 취소했습니다")
+                .reservationId(reservation.getReservationId())
+                .accommodationId(reservation.getAccommodation().getAccommodationId())
+                .build();
+    }
+
+    /**
+     * 게스트용 예약 취소 이메일 메시지 생성
+     */
+    private EmailMessage buildGuestCancellationEmail(Reservation reservation) {
+        return EmailMessage.builder()
+                .emailType(EmailMessage.EmailType.CANCELLATION_NOTIFICATION)
+                .to(reservation.getMember().getEmail())
+                .subject("[빈방] 예약 취소가 완료되었습니다 - " + reservation.getAccommodation().getName())
+                .reservationId(reservation.getReservationId())
+                .accommodationName(reservation.getAccommodation().getName())
+                .guestName(reservation.getMember().getName())
+                .hostName(reservation.getAccommodation().getMember().getName())
+                .checkInDate(formatDate(reservation.getCheckInDate()))
+                .checkOutDate(formatDate(reservation.getCheckOutDate()))
+                .totalPrice(reservation.getTotalPrice())
+                .guestCount(reservation.getPersonnel())
+                .build();
+    }
+
+    /**
+     * 게스트용 예약 취소 알림 메시지 생성
+     */
+    private NotificationMessage buildGuestCancellationNotification(Reservation reservation) {
+        return NotificationMessage.builder()
+                .notificationType(NotificationMessage.NotificationType.RESERVATION_CANCELLED)
+                .memberId(reservation.getMember().getMemberId())
+                .title("예약 취소가 완료되었습니다")
+                .content(reservation.getAccommodation().getName() + " 예약이 취소되었습니다")
+                .reservationId(reservation.getReservationId())
+                .accommodationId(reservation.getAccommodation().getAccommodationId())
+                .build();
+    }
+
+    private String formatDate(LocalDate date) {
+        return date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
 }

@@ -63,6 +63,7 @@ public class ReservationResponse {
         return ReservationResponse.builder()
                 // 예약 정보
                 .reservationId(reservation.getReservationId())
+                .reservedAt(LocalDateTime.now())
                 .checkInDate(reservation.getCheckInDate())
                 .checkOutDate(reservation.getCheckOutDate())
                 .personnel(reservation.getPersonnel())

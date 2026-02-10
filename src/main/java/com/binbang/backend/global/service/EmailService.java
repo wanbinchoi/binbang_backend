@@ -1,17 +1,24 @@
 package com.binbang.backend.global.service;
 
-import com.binbang.backend.reservation.entity.Reservation;
+import com.binbang.backend.global.dto.EmailMessage;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.format.DateTimeFormatter;
-
+/**
+ * 이메일 발송 서비스
+ * - EmailConsumer에서 호출됨
+ * - 실제 이메일 발송 수행
+ *
+ * 주요 변경 사항
+ * 1. @Async 제거 - Consumer가 이미 별도 스레드에서 실행
+ * 2. 파라미터 변경: Reservation → EmailMessage - 메시지 큐를 통해 필요한 데이터만 전달
+ * 3. 예외 처리 변경 - 예외를 다시 던져야 RabbitMQ 재시도 메커니즘 작동
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,78 +27,75 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     /**
-     * 호스트에게 새 예약 알림 이메일 발송
+     * 게스트 예약 확인 이메일 발송
      *
-     * @param reservation 예약 정보
+     * @param emailMessage 이메일 정보
      */
-    @Async
-    public void sendNewReservationNotification(Reservation reservation){
-        try{
-            String hostEmail = reservation.getAccommodation().getMember().getEmail();
-            String subject = "[binbang] 새로운 예약이 접수되었습니다 - "+reservation.getAccommodation().getName();
-            String content = buildNewReservationEmailContent(reservation);
+    public void sendReservationConfirmationEmail(EmailMessage emailMessage) {
+        try {
+            String content = buildReservationConfirmationEmailContent(emailMessage);
+            sendEmail(emailMessage.getTo(), emailMessage.getSubject(), content);
 
-            sendEmail(hostEmail,subject,content);
+            log.info("예약 확인 이메일 발송 완료: to={}, reservationId={}",
+                    emailMessage.getTo(),
+                    emailMessage.getReservationId());
 
-            log.info("예약 알람 이메일 발송 완료 : host email = {}",hostEmail);
         } catch (Exception e) {
-            log.info("예약 알람 이메일 발송 실패 : error = {}",e.getMessage());
+            log.error("예약 확인 이메일 발송 실패: to={}, error={}",
+                    emailMessage.getTo(),
+                    e.getMessage(), e);
+            throw new RuntimeException("예약 확인 이메일 발송 실패", e);
         }
     }
 
     /**
-     * 게스트에게 예약 확인 이메일 발송
+     * 호스트 새 예약 알림 이메일 발송
      *
-     * @param reservation 예약 정보
+     * @param emailMessage 이메일 정보
      */
-    @Async
-    public void sendReservationConfirmation(Reservation reservation) {
+    public void sendNewReservationNotificationEmail(EmailMessage emailMessage) {
         try {
-            String guestEmail = reservation.getMember().getEmail();
-            String subject = "[빈방] 예약이 완료되었습니다 - " + reservation.getAccommodation().getName();
-            String content = buildReservationConfirmationEmailContent(reservation);
+            String content = buildNewReservationEmailContent(emailMessage);
+            sendEmail(emailMessage.getTo(), emailMessage.getSubject(), content);
 
-            sendEmail(guestEmail, subject, content);
+            log.info("새 예약 알림 이메일 발송 완료: to={}, reservationId={}",
+                    emailMessage.getTo(),
+                    emailMessage.getReservationId());
 
-            log.info("예약 확인 이메일 발송 완료: guestEmail={}, reservationId={}",
-                    guestEmail, reservation.getReservationId());
         } catch (Exception e) {
-            log.error("예약 확인 이메일 발송 실패: reservationId={}, error={}",
-                    reservation.getReservationId(), e.getMessage(), e);
+            log.error("새 예약 알림 이메일 발송 실패: to={}, error={}",
+                    emailMessage.getTo(),
+                    e.getMessage(), e);
+            throw new RuntimeException("새 예약 알림 이메일 발송 실패", e);
         }
     }
 
     /**
      * 예약 취소 알림 이메일 발송
      *
-     * @param reservation 예약 정보
+     * @param emailMessage 이메일 정보
      */
-    @Async
-    public void sendCancellationNotification(Reservation reservation) {
+    public void sendCancellationNotificationEmail(EmailMessage emailMessage) {
         try {
-            // 호스트에게 발송
-            String hostEmail = reservation.getAccommodation().getMember().getEmail();
-            String hostSubject = "[빈방] 예약이 취소되었습니다 - " + reservation.getAccommodation().getName();
-            String hostContent = buildCancellationEmailContent(reservation, true);
-            sendEmail(hostEmail, hostSubject, hostContent);
+            String content = buildCancellationEmailContent(emailMessage);
+            sendEmail(emailMessage.getTo(), emailMessage.getSubject(), content);
 
-            // 게스트에게 발송
-            String guestEmail = reservation.getMember().getEmail();
-            String guestSubject = "[빈방] 예약 취소가 완료되었습니다 - " + reservation.getAccommodation().getName();
-            String guestContent = buildCancellationEmailContent(reservation, false);
-            sendEmail(guestEmail, guestSubject, guestContent);
+            log.info("예약 취소 이메일 발송 완료: to={}, reservationId={}",
+                    emailMessage.getTo(),
+                    emailMessage.getReservationId());
 
-            log.info("예약 취소 이메일 발송 완료: reservationId={}", reservation.getReservationId());
         } catch (Exception e) {
-            log.error("예약 취소 이메일 발송 실패: reservationId={}, error={}",
-                    reservation.getReservationId(), e.getMessage(), e);
+            log.error("예약 취소 이메일 발송 실패: to={}, error={}",
+                    emailMessage.getTo(),
+                    e.getMessage(), e);
+            throw new RuntimeException("예약 취소 이메일 발송 실패", e);
         }
     }
 
     /**
-     * 실제 이메일 발송 메소드
+     * 실제 이메일 발송 메서드
      */
-    private void sendEmail(String to, String subject, String content) throws MessagingException{
+    private void sendEmail(String to, String subject, String content) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -104,13 +108,91 @@ public class EmailService {
     }
 
     /**
+     * 게스트용 예약 확인 이메일 본문 생성
+     */
+    private String buildReservationConfirmationEmailContent(EmailMessage emailMessage) {
+        return String.format("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; border-radius: 5px; }
+                        .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }
+                        .info-row { margin: 10px 0; padding: 10px; background-color: white; border-radius: 3px; }
+                        .label { font-weight: bold; color: #555; }
+                        .value { color: #333; margin-left: 10px; }
+                        .footer { margin-top: 20px; text-align: center; color: #777; font-size: 12px; }
+                        .highlight { color: #2196F3; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h2>✅ 예약이 완료되었습니다!</h2>
+                        </div>
+                        
+                        <div class="content">
+                            <p>안녕하세요, <strong>%s</strong>님!</p>
+                            <p>예약이 성공적으로 완료되었습니다.</p>
+                            
+                            <h3>🏠 숙소 정보</h3>
+                            
+                            <div class="info-row">
+                                <span class="label">숙소명:</span>
+                                <span class="value">%s</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">호스트:</span>
+                                <span class="value">%s</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">체크인:</span>
+                                <span class="value">%s</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">체크아웃:</span>
+                                <span class="value">%s</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">투숙 인원:</span>
+                                <span class="value">%d명</span>
+                            </div>
+                            
+                            <div class="info-row">
+                                <span class="label">총 금액:</span>
+                                <span class="value highlight">%,d원</span>
+                            </div>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>즐거운 여행 되세요!</p>
+                            <p><strong>빈방</strong> 팀 드림</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """,
+                emailMessage.getGuestName(),
+                emailMessage.getAccommodationName(),
+                emailMessage.getHostName(),
+                emailMessage.getCheckInDate(),
+                emailMessage.getCheckOutDate(),
+                emailMessage.getGuestCount(),
+                emailMessage.getTotalPrice()
+        );
+    }
+
+    /**
      * 호스트용 새 예약 알림 이메일 본문 생성
      */
-    private String buildNewReservationEmailContent(Reservation reservation){
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-        DateTimeFormatter datetimeFormatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH:mm");
-
+    private String buildNewReservationEmailContent(EmailMessage emailMessage) {
         return String.format("""
                 <!DOCTYPE html>
                 <html>
@@ -142,22 +224,17 @@ public class EmailService {
                             
                             <div class="info-row">
                                 <span class="label">예약자:</span>
-                                <span class="value">%s (%s)</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">전화번호:</span>
                                 <span class="value">%s</span>
                             </div>
                             
                             <div class="info-row">
                                 <span class="label">체크인:</span>
-                                <span class="value">%s %s</span>
+                                <span class="value">%s</span>
                             </div>
                             
                             <div class="info-row">
                                 <span class="label">체크아웃:</span>
-                                <span class="value">%s %s</span>
+                                <span class="value">%s</span>
                             </div>
                             
                             <div class="info-row">
@@ -166,18 +243,8 @@ public class EmailService {
                             </div>
                             
                             <div class="info-row">
-                                <span class="label">숙박 일수:</span>
-                                <span class="value">%d박</span>
-                            </div>
-                            
-                            <div class="info-row">
                                 <span class="label">총 금액:</span>
                                 <span class="value highlight">%,d원</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">예약 시각:</span>
-                                <span class="value">%s</span>
                             </div>
                         </div>
                         
@@ -189,38 +256,20 @@ public class EmailService {
                 </body>
                 </html>
                 """,
-                // 호스트 정보
-                reservation.getAccommodation().getMember().getName(),
-                reservation.getAccommodation().getName(),
-
-                // 예약자 정보
-                reservation.getMember().getName(),
-                reservation.getMember().getEmail(),
-                reservation.getMember().getPhone() != null ? reservation.getMember().getPhone() : "정보 없음",
-
-                // 예약 날짜
-                reservation.getCheckInDate().format(dateFormatter),
-                reservation.getAccommodation().getCheckInTime().format(timeFormatter),
-                reservation.getCheckOutDate().format(dateFormatter),
-                reservation.getAccommodation().getCheckOutTime().format(timeFormatter),
-
-                // 인원 및 일수
-                reservation.getPersonnel(),
-                java.time.temporal.ChronoUnit.DAYS.between(reservation.getCheckInDate(), reservation.getCheckOutDate()),
-
-                // 금액 및 예약 시각
-                reservation.getTotalPrice(),
-                reservation.getReservedAt().format(datetimeFormatter)
+                emailMessage.getHostName(),
+                emailMessage.getAccommodationName(),
+                emailMessage.getGuestName(),
+                emailMessage.getCheckInDate(),
+                emailMessage.getCheckOutDate(),
+                emailMessage.getGuestCount(),
+                emailMessage.getTotalPrice()
         );
     }
 
     /**
-     * 게스트용 예약 확인 이메일 본문 생성
+     * 예약 취소 이메일 본문 생성
      */
-    private String buildReservationConfirmationEmailContent(Reservation reservation) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-
+    private String buildCancellationEmailContent(EmailMessage emailMessage) {
         return String.format("""
                 <!DOCTYPE html>
                 <html>
@@ -229,7 +278,7 @@ public class EmailService {
                     <style>
                         body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; }
                         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; border-radius: 5px; }
+                        .header { background-color: #F44336; color: white; padding: 20px; text-align: center; border-radius: 5px; }
                         .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }
                         .info-row { margin: 10px 0; padding: 10px; background-color: white; border-radius: 3px; }
                         .label { font-weight: bold; color: #555; }
@@ -240,164 +289,35 @@ public class EmailService {
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h2>✅ 예약이 완료되었습니다!</h2>
+                            <h2>❌ 예약이 취소되었습니다</h2>
                         </div>
                         
                         <div class="content">
-                            <p>안녕하세요, <strong>%s</strong>님!</p>
-                            <p>예약이 성공적으로 완료되었습니다.</p>
-                            
-                            <h3>🏠 숙소 정보</h3>
+                            <p>안녕하세요!</p>
+                            <p>'<strong>%s</strong>'의 예약이 취소되었습니다.</p>
                             
                             <div class="info-row">
-                                <span class="label">숙소명:</span>
-                                <span class="value">%s</span>
+                                <span class="label">예약 기간:</span>
+                                <span class="value">%s ~ %s</span>
                             </div>
                             
                             <div class="info-row">
-                                <span class="label">주소:</span>
-                                <span class="value">%s</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">체크인:</span>
-                                <span class="value">%s %s</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">체크아웃:</span>
-                                <span class="value">%s %s</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">총 금액:</span>
-                                <span class="value">%,d원</span>
-                            </div>
-                            
-                            <h3>📞 호스트 연락처</h3>
-                            
-                            <div class="info-row">
-                                <span class="label">호스트:</span>
-                                <span class="value">%s</span>
-                            </div>
-                            
-                            <div class="info-row">
-                                <span class="label">전화번호:</span>
+                                <span class="label">예약자:</span>
                                 <span class="value">%s</span>
                             </div>
                         </div>
                         
                         <div class="footer">
-                            <p>즐거운 여행 되세요!</p>
                             <p><strong>빈방</strong> 팀 드림</p>
                         </div>
                     </div>
                 </body>
                 </html>
                 """,
-                // 게스트 정보
-                reservation.getMember().getName(),
-
-                // 숙소 정보
-                reservation.getAccommodation().getName(),
-                reservation.getAccommodation().getAddress(),
-
-                // 날짜
-                reservation.getCheckInDate().format(dateFormatter),
-                reservation.getAccommodation().getCheckInTime().format(timeFormatter),
-                reservation.getCheckOutDate().format(dateFormatter),
-                reservation.getAccommodation().getCheckOutTime().format(timeFormatter),
-
-                // 금액
-                reservation.getTotalPrice(),
-
-                // 호스트 정보
-                reservation.getAccommodation().getMember().getName(),
-                reservation.getAccommodation().getMember().getPhone() != null ?
-                        reservation.getAccommodation().getMember().getPhone() : "정보 없음"
+                emailMessage.getAccommodationName(),
+                emailMessage.getCheckInDate(),
+                emailMessage.getCheckOutDate(),
+                emailMessage.getGuestName()
         );
     }
-
-    /**
-     * 예약 취소 이메일 본문 생성
-     */
-    private String buildCancellationEmailContent(Reservation reservation, boolean isForHost) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
-
-        if (isForHost) {
-            // 호스트용
-            return String.format("""
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <style>
-                            body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; }
-                            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                            .header { background-color: #F44336; color: white; padding: 20px; text-align: center; border-radius: 5px; }
-                            .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }
-                            .info-row { margin: 10px 0; padding: 10px; background-color: white; border-radius: 3px; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="header">
-                                <h2>❌ 예약이 취소되었습니다</h2>
-                            </div>
-                            
-                            <div class="content">
-                                <p>안녕하세요, <strong>%s</strong>님!</p>
-                                <p>'<strong>%s</strong>'의 예약이 취소되었습니다.</p>
-                                
-                                <div class="info-row">
-                                    취소된 기간: %s ~ %s
-                                </div>
-                                <div class="info-row">
-                                    예약자: %s
-                                </div>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                    """,
-                    reservation.getAccommodation().getMember().getName(),
-                    reservation.getAccommodation().getName(),
-                    reservation.getCheckInDate().format(dateFormatter),
-                    reservation.getCheckOutDate().format(dateFormatter),
-                    reservation.getMember().getName()
-            );
-        } else {
-            // 게스트용
-            return String.format("""
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <style>
-                            body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; }
-                            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                            .header { background-color: #F44336; color: white; padding: 20px; text-align: center; border-radius: 5px; }
-                            .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="header">
-                                <h2>✅ 예약 취소가 완료되었습니다</h2>
-                            </div>
-                            
-                            <div class="content">
-                                <p>안녕하세요, <strong>%s</strong>님!</p>
-                                <p>'<strong>%s</strong>'의 예약 취소가 완료되었습니다.</p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                    """,
-                    reservation.getMember().getName(),
-                    reservation.getAccommodation().getName()
-            );
-        }
-    }
-
 }

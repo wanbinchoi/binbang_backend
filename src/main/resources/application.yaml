@@ -28,6 +28,19 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:user}
+    password: ${RABBITMQ_PASSWORD:password1234}
+    listener:
+      simple:
+        retry:
+          enabled: true  # 메시지 처리 실패 시 재시도 활성화
+          initial-interval: 5000    # 첫 재시도 대기 시간 (3초)
+          max-attempts: 3           # 최대 재시도 횟수
+          multiplier: 2.0           # 재시도 간격 배수 (4초 -> 8초 -> 16초)
+
   mail:
     host: smtp.gmail.com
     port: 587

@@ -16,7 +16,10 @@ import com.binbang.backend.accommodation.repository.AccommodationPolicyRepositor
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
 import com.binbang.backend.accommodation.specification.AccommodationSpecification;
 import com.binbang.backend.category.entity.Category;
+import com.binbang.backend.category.entity.Region;
+import com.binbang.backend.category.exception.RegionNotFoundException;
 import com.binbang.backend.category.repository.CategoryRepository;
+import com.binbang.backend.category.repository.RegionRepository;
 import com.binbang.backend.global.exception.CustomException;
 import com.binbang.backend.global.service.S3Service;
 import com.binbang.backend.member.entity.Member;
@@ -35,7 +38,9 @@ import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +52,7 @@ public class AccommodationService {
     private final AccommodationFacilityRepository facilityRepository;
     private final AccommodationPolicyRepository policyRepository;
     private final AccommodationImageRepository accommodationImageRepository;
+    private final RegionRepository regionRepository;
     private final ObjectMapper objectMapper;
     private final S3Service s3Service;
 
@@ -66,6 +72,9 @@ public class AccommodationService {
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException(dto.getCategoryId()));
 
+        Region region = regionRepository.findByName(dto.getRegionName())
+                .orElseThrow(() -> new RegionNotFoundException(dto.getRegionName()));
+
         Accommodation accommodation = Accommodation.builder()
                 .member(member)
                 .name(dto.getName())
@@ -77,6 +86,7 @@ public class AccommodationService {
                 .longitude(dto.getLongitude())
                 .description(dto.getDescription())
                 .category(category)
+                .region(region)
                 .build();
 
         accommodationRepository.save(accommodation);
@@ -137,43 +147,6 @@ public class AccommodationService {
             accommodationImageRepository.save(accommodationImage);
         }
     }
-    //전체 조회
-//    public Page<AccommodationListResponse> getList(Pageable pageable){
-//        Page<Accommodation> accommodationPage = accommodationRepository.findAll(pageable);
-//
-//        //Page<Accommodation>를 Page<AccommodationListResponse>로 변환
-//
-//        return accommodationPage.map(
-//                accommodation ->
-//                new AccommodationListResponse(
-//                        accommodation.getAccommodationId(),
-//                        accommodation.getName(),
-//                        accommodation.getPrice()
-//                )
-//        );
-//    }
-
-    //카테고리별 조회 없으면 전체조회
-//   @Transactional
-//    public Page<AccommodationListResponse> getList(Long categoryId, Pageable pageable){
-//        Page<Accommodation> accommodationPage;
-//
-//        if(categoryId == null){
-//            accommodationPage = accommodationRepository.findAll(pageable);
-//        }else{
-//            accommodationPage = accommodationRepository.findByCategory_CategoryId(categoryId, pageable);
-//        }
-//        //Page<Accommodation>를 Page<AccommodationListResponse>로 변환
-//
-//        return accommodationPage.map(
-//                accommodation ->
-//                        new AccommodationListResponse(
-//                                accommodation.getAccommodationId(),
-//                                accommodation.getName(),
-//                                accommodation.getPrice()
-//                        )
-//        );
-//    }
 
     @Transactional
     public Page<AccommodationListResponse> getList(
@@ -185,8 +158,26 @@ public class AccommodationService {
             Boolean parkingAvailable,
             Boolean hasBbq,
             Boolean hasWifi,
+            String keyword,
+            Long regionId,
             Pageable pageable
     ){
+        List<Long> regionIds = new ArrayList<>();
+
+        if(regionId != null){
+            Region region = regionRepository.findById(regionId)
+                    .orElseThrow(() -> new RegionNotFoundException(regionId));
+
+            if (region.getDepth() == 1){
+                List<Region> children = regionRepository.findByParent(region);
+                regionIds = children.stream()
+                        .map(Region::getRegionId)
+                        .collect(Collectors.toList());
+            }else{
+                regionIds.add(regionId);
+            }
+        }
+
         //Specification 조합
         Specification<Accommodation> spec = Specification
                 .where(AccommodationSpecification.hasCategory(categoryId))
@@ -196,7 +187,9 @@ public class AccommodationService {
                 .and(AccommodationSpecification.petAllowed(petAllowed))
                 .and(AccommodationSpecification.parkingAvailable(parkingAvailable))
                 .and(AccommodationSpecification.hasBbq(hasBbq))
-                .and(AccommodationSpecification.hasWifi(hasWifi));
+                .and(AccommodationSpecification.hasWifi(hasWifi))
+                .and(AccommodationSpecification.addressLike(keyword))
+                .and(AccommodationSpecification.hasRegionIn(regionIds));
 
         //위에서 만든 조건으로 페이징처리하여 조회
         Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);

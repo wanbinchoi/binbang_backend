@@ -11,6 +11,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: never
+
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -86,3 +92,6 @@ cloud:
       static: ap-northeast-2
     s3:
       bucket: image-binbang
+
+kakao:
+  rest-api-key: ${KAKAO_REST_API_KEY}

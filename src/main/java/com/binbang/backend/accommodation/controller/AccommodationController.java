@@ -41,11 +41,13 @@ public class AccommodationController {
             @RequestParam(required = false) Boolean parkingAvailable,
             @RequestParam(required = false) Boolean hasBbq,
             @RequestParam(required = false) Boolean hasWifi,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long regionId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable){
         Page<AccommodationListResponse> result = accommodationService.getList(
                 categoryId, minBedrooms, minBathrooms, minBeds,
                 petAllowed, parkingAvailable, hasBbq, hasWifi,
-                pageable);
+                keyword, regionId,pageable);
         return ResponseEntity.ok(result);
     }
 

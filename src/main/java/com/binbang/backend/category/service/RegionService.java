@@ -5,7 +5,6 @@ import com.binbang.backend.category.entity.Region;
 import com.binbang.backend.category.exception.RegionNotFoundException;
 import com.binbang.backend.category.repository.RegionRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

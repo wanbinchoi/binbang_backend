@@ -3,6 +3,8 @@ package com.binbang.backend.accommodation.specification;
 import com.binbang.backend.accommodation.entity.Accommodation;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class AccommodationSpecification {
 
     public static Specification<Accommodation> hasCategory(Long categoryId){
@@ -114,15 +116,12 @@ public class AccommodationSpecification {
             );
         };
     }
-    public static Specification<Accommodation> hasRegion(Long regionId){
+    public static Specification<Accommodation> hasRegionIn(List<Long> regionIds){
         return (root, query,criteriaBuilder) -> {
-            if(regionId == null){
+            if(regionIds == null || regionIds.isEmpty()){
                 return null;
             }
-            return criteriaBuilder.equal(
-                    root.get("region").get("regionId"),
-                    regionId
-            );
+            return root.get("region").get("regionId").in(regionIds);
         };
     }
 }

@@ -17,8 +17,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NotificationConsumer {
 
-    // TODO: WebSocket 서비스 추가 시 주입
-    // private final WebSocketService webSocketService;
+    // WebSocket 서비스 주입
+    private final WebSocketService webSocketService;
 
     /**
      * 알림 Queue 리스너
@@ -76,16 +76,15 @@ public class NotificationConsumer {
      * 새 예약 도착 알림 (호스트용)
      */
     private void sendNewReservationNotification(NotificationMessage message) {
-        // TODO: WebSocket으로 실시간 알림 전송
-        // webSocketService.sendToUser(message.getMemberId(), message);
+        // WebSocket으로 실시간 알림 전송
+        webSocketService.sendNotification(message.getMemberId(), message);
 
-        // 현재는 로그만 출력
         log.info("새 예약 알림: memberId={}, title={}, content={}",
                 message.getMemberId(),
                 message.getTitle(),
                 message.getContent());
 
-        // TODO: DB에 알림 저장 (나중에 알림 목록 조회용)
+        // TODO: DB에 알림 저장 (나중에 알림 목록 조회용인데 있으나 없으나일듯)
         // notificationRepository.save(notification);
     }
 
@@ -93,7 +92,8 @@ public class NotificationConsumer {
      * 예약 확정 알림 (게스트용)
      */
     private void sendReservationConfirmedNotification(NotificationMessage message) {
-        // TODO: WebSocket으로 실시간 알림 전송
+        // WebSocket으로 실시간 알림 전송
+        webSocketService.sendNotification(message.getMemberId(), message);
 
         log.info("예약 확정 알림: memberId={}, title={}, content={}",
                 message.getMemberId(),
@@ -105,7 +105,8 @@ public class NotificationConsumer {
      * 예약 취소 알림
      */
     private void sendReservationCancelledNotification(NotificationMessage message) {
-        // TODO: WebSocket으로 실시간 알림 전송
+        // WebSocket으로 실시간 알림 전송
+        webSocketService.sendNotification(message.getMemberId(),message);
 
         log.info("예약 취소 알림: memberId={}, title={}, content={}",
                 message.getMemberId(),
@@ -117,7 +118,8 @@ public class NotificationConsumer {
      * 예약 완료 알림
      */
     private void sendReservationCompletedNotification(NotificationMessage message) {
-        // TODO: WebSocket으로 실시간 알림 전송
+        // WebSocket으로 실시간 알림 전송
+        webSocketService.sendNotification(message.getMemberId(),message);
 
         log.info("예약 완료 알림: memberId={}, title={}, content={}",
                 message.getMemberId(),

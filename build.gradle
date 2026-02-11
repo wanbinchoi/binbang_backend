@@ -50,6 +50,9 @@ dependencies {
 
 	// json 변환하기 위헤사
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	// websocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

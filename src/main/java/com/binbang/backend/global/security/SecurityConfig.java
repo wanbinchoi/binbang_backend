@@ -42,18 +42,45 @@ public class SecurityConfig {
         http
                 // csfr 보호 비활성화 (jwt 사용 시 필요없음)
                 .csrf(csrf->csrf.disable())
+                // CORS 설정 (WebSocket용 추가)
+                .cors(cors -> cors.disable())  // 개발 환경에서는 비활성화
+                // Frame Options 비활성화 (WebSocket용)
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable())
+                )
                 // jwt는 세션 사용 안함
                 .sessionManagement(session->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // URL별 접근 권한 설정
                 .authorizeHttpRequests(auth->auth
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/test/**",
-                                "/login/oauth2/**",  //소셜로그인 엔드포인트 허용
-                                "/health"
-                        ).permitAll()
-                        // 나머지는 다 허용
+                        // 인증 관련 엔드포인트
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // OAuth2 로그인 관련
+                        .requestMatchers("/login/**", "/oauth2/**").permitAll()
+
+                        // WebSocket 관련 엔드포인트 (중요!)
+                        .requestMatchers("/ws/**").permitAll()           // WebSocket 엔드포인트
+                        .requestMatchers("/app/**").permitAll()          // STOMP 메시지 전송
+                        .requestMatchers("/topic/**").permitAll()        // STOMP 구독
+                        .requestMatchers("/queue/**").permitAll()        // STOMP 개인 메시지
+
+                        // 테스트 페이지
+                        .requestMatchers("/websocket-test.html").permitAll()
+
+                        // 주소 검색 API
+                        .requestMatchers("/api/address/**").permitAll()
+
+                        // 지역 조회 API
+                        .requestMatchers("/api/regions/**").permitAll()
+
+                        // 숙소 목록 조회 API
+                        .requestMatchers("/api/accommodations/**").permitAll()
+
+                        // S3 테스트
+                        .requestMatchers("/api/s3/test/**").permitAll()
+
+                        // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
                 // jwt쓰기 때문에 form 로그인 비활성화

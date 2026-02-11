@@ -67,6 +67,7 @@ public class SecurityConfig {
 
                         // 테스트 페이지
                         .requestMatchers("/websocket-test.html").permitAll()
+                        .requestMatchers("/chat-test.html").permitAll()
 
                         // 주소 검색 API
                         .requestMatchers("/api/address/**").permitAll()

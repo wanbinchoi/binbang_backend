@@ -61,7 +61,7 @@ public class ChatRoom {
      * - 채팅방 목록 정렬에 사용
      */
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     // ========= 유틸리티 메소드 =============

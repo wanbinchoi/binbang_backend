@@ -1,5 +1,6 @@
 package com.binbang.backend.global.service;
 
+import com.binbang.backend.chat.dto.response.ChatMessageResponse;
 import com.binbang.backend.global.dto.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,31 @@ public class WebSocketService {
         }catch(Exception e){
             log.error("WebSocket 알림 전송 실패 error={}",e.getMessage());
             // 예외를 던지지 않는 이유는 WebSocket 전송 실패해도 이메일은 정상적으로 가야함
+        }
+    }
+
+    /**
+     * 특정 회원에게 채팅 메시지 전송
+     *
+     * @param memberId 수신자 회원 ID
+     * @param message 채팅 메시지
+     */
+    public void sendChatMessage(Long memberId, ChatMessageResponse message) {
+        try {
+            // /topic/chat/{memberId} 채널로 메시지 전송
+            messagingTemplate.convertAndSend(
+                    "/topic/chat/" + memberId,
+                    message
+            );
+
+            log.info("WebSocket 채팅 메시지 전송 완료: receiverId={}, messageId={}",
+                    memberId,
+                    message.getMessageId());
+
+        } catch (Exception e) {
+            log.error("WebSocket 채팅 메시지 전송 실패: receiverId={}, error={}",
+                    memberId,
+                    e.getMessage(), e);
         }
     }
 

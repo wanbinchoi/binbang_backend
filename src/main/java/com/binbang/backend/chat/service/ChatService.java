@@ -28,6 +28,17 @@ public class ChatService {
     private final MemberRepository memberRepository;
     private final WebSocketService webSocketService;
 
-    
+    /**
+     * 채팅방 생성 또는 조회
+     *
+     * 흐름:
+     * 1. 예약 조회
+     * 2. 권한 체크 (호스트 or 게스트만 접근 가능)
+     * 3. 기존 채팅방 조회 또는 신규 생성
+     *
+     * @param reservationId 예약 ID
+     * @param memberId 요청자 회원 ID
+     * @return 채팅방 정보
+     */
 
 }

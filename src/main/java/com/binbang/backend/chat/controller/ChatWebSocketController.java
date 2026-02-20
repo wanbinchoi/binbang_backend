@@ -44,6 +44,10 @@ public class ChatWebSocketController {
         // WebSocket 세션에서 memberId 추출
         Long senderId = request.getSenderId();
 
+        if(senderId==null){
+            log.error("WebSocket 메시지에 senderId가 없습니다 : {}",request);
+        }
+
         log.info("WebSocket 메시지 수신: chatRoomId={}, content={}",
                 request.getChatRoomId(), request.getContent());
 

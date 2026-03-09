@@ -84,12 +84,10 @@ public class ReservationService {
         // 6. 저장
         Reservation saveReservation = reservationRepository.save(reservation);
 
-        // 게스트에게 예약 확인
         EmailMessage guestEmail = buildGuestConfirmationEmail(saveReservation);
         NotificationMessage guestNotification = buildGuestConfirmationNotification(saveReservation);
         messageProducer.sendReservationConfirmation(guestEmail, guestNotification);
 
-        // 호스트에게 새 예약 알림
         EmailMessage hostEmail = buildHostNewReservationEmail(saveReservation);
         NotificationMessage hostNotification = buildHostNewReservationNotification(saveReservation);
         messageProducer.sendNewReservationNotification(hostEmail, hostNotification);

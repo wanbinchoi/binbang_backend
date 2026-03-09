@@ -1,5 +1,6 @@
 package com.binbang.backend.accommodation.service;
 
+import com.binbang.backend.accommodation.dto.AccommodationDetailResponse;
 import com.binbang.backend.accommodation.dto.AccommodationFacilityDto;
 import com.binbang.backend.accommodation.dto.AccommodationListResponse;
 import com.binbang.backend.accommodation.entity.AccommodationFacility;
@@ -148,6 +149,13 @@ public class AccommodationService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public AccommodationDetailResponse getDetail(Long accommodationId) {
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+                .orElseThrow(() -> new AccommodationNotFoundException(accommodationId));
+        return AccommodationDetailResponse.from(accommodation);
+    }
+
     @Transactional
     public Page<AccommodationListResponse> getList(
             Long categoryId,
@@ -194,14 +202,7 @@ public class AccommodationService {
         //위에서 만든 조건으로 페이징처리하여 조회
         Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);
 
-        //DTO 변환
-        return accommodationPage.map(
-                accommodation ->
-                        new AccommodationListResponse(
-                                accommodation.getAccommodationId(),
-                                accommodation.getName(),
-                                accommodation.getPrice()
-                        )
-        );
+        // DTO 변환 (정적 팩토리 메서드로 썸네일, 지역명, 카테고리명 포함)
+        return accommodationPage.map(AccommodationListResponse::from);
     }
 }

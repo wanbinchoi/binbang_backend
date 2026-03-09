@@ -185,6 +185,57 @@ public class ChatService {
     }
 
     /**
+     * 내 채팅방 목록 조회
+     *
+     * @param email 로그인한 사용자 이메일
+     * @return 채팅방 목록
+     */
+    @Transactional
+    public List<ChatRoomResponse> getMyChatRooms(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."));
+
+        List<ChatRoom> rooms = chatRoomRepository.findMyRooms(member.getMemberId());
+
+        return rooms.stream()
+                .map(room -> {
+                    ChatMessage lastMsg = chatMessageRepository
+                            .findTopByChatRoom_ChatRoomIdOrderByCreatedAtDesc(room.getChatRoomId())
+                            .orElse(null);
+                    return ChatRoomResponse.from(room, lastMsg, 0);
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 예약 생성 시 채팅방 자동 생성 (ReservationService에서 호출)
+     * - 이미 채팅방이 있으면 그냥 반환 (중복 생성 방지)
+     *
+     * @param reservation 생성된 예약 엔티티
+     */
+    @Transactional
+    public void createChatRoomForReservation(Reservation reservation) {
+        // 이미 채팅방이 있으면 스킵 (멱등성 보장)
+        boolean exists = chatRoomRepository
+                .existsByReservation_ReservationId(reservation.getReservationId());
+        if (exists) {
+            log.info("채팅방 이미 존재: reservationId={}", reservation.getReservationId());
+            return;
+        }
+
+        ChatRoom chatRoom = new ChatRoom();
+        chatRoom.setReservation(reservation);
+        chatRoom.setHost(reservation.getAccommodation().getMember());
+        chatRoom.setGuest(reservation.getMember());
+        chatRoomRepository.save(chatRoom);
+
+        log.info("채팅방 생성 완료: reservationId={}, host={}, guest={}",
+                reservation.getReservationId(),
+                reservation.getAccommodation().getMember().getEmail(),
+                reservation.getMember().getEmail());
+    }
+
+    /**
      * 채팅방 ID로 채팅방 조회
      *
      * @param chatRoomId 채팅방 ID

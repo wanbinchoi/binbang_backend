@@ -1,5 +1,6 @@
 package com.binbang.backend.accommodation.controller;
 
+import com.binbang.backend.accommodation.dto.AccommodationDetailResponse;
 import com.binbang.backend.accommodation.dto.AccommodationListResponse;
 import com.binbang.backend.accommodation.dto.AccommodationRegisterDto;
 import com.binbang.backend.accommodation.dto.AccommodationResponse;
@@ -25,6 +26,12 @@ import java.util.List;
 public class AccommodationController {
 
     private final AccommodationService accommodationService;
+
+    // 숙소 상세 조회 (비로그인도 가능, SecurityConfig에서 GET /api/accommodation/** 퍼블릭 허용)
+    @GetMapping("/{id}")
+    public ResponseEntity<AccommodationDetailResponse> getDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(accommodationService.getDetail(id));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<AccommodationResponse> register(@Valid @RequestBody AccommodationRegisterDto dto){

@@ -95,7 +95,7 @@ public class AuthService {
 
         log.info("jwt 발급 및 로그인 성공 : email={}",member.getEmail());
 
-        return AuthResponse.of(accessToken,refreshToken,expireIn);
+        return AuthResponse.of(member.getMemberId(), accessToken, refreshToken, expireIn);
     }
 
     /**
@@ -137,7 +137,7 @@ public class AuthService {
 
         log.info("Access Token 재발급 완료=Access Token:{}",newAccessToken);
 
-        return AuthResponse.of(newAccessToken,refreshToken,expireIn);
+        return AuthResponse.of(member.getMemberId(), newAccessToken, refreshToken, expireIn);
     }
 
 }

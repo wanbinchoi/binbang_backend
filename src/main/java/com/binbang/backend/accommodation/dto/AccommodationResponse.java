@@ -14,6 +14,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @Builder
 public class AccommodationResponse {
+    private Long accommodationId;  // 이미지 업로드 등 후속 작업에 필요
     private String name;
     private Long price;
     private String description;
@@ -26,6 +27,7 @@ public class AccommodationResponse {
 
     public static AccommodationResponse from(Accommodation accommodation){
         return AccommodationResponse.builder()
+                .accommodationId(accommodation.getAccommodationId())
                 .name(accommodation.getName())
                 .price(accommodation.getPrice())
                 .description(accommodation.getDescription())

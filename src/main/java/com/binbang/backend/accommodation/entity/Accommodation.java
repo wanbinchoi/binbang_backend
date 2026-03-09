@@ -9,6 +9,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -76,5 +78,10 @@ public class Accommodation {
 
     @OneToOne(mappedBy = "accommodation", fetch = FetchType.LAZY)
     private AccommodationFacility facility;
+
+    // 대표 이미지 조회에 사용 (썸네일 추출용)
+    @OneToMany(mappedBy = "accommodation", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<AccommodationImage> images = new ArrayList<>();
 
 }

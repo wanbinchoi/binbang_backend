@@ -4,6 +4,7 @@ import com.binbang.backend.accommodation.entity.Accommodation;
 import com.binbang.backend.accommodation.entity.AccommodationStatus;
 import com.binbang.backend.accommodation.exception.AccommodationNotFoundException;
 import com.binbang.backend.accommodation.repository.AccommodationRepository;
+import com.binbang.backend.chat.service.ChatService;
 import com.binbang.backend.global.dto.EmailMessage;
 import com.binbang.backend.global.dto.NotificationMessage;
 import com.binbang.backend.global.exception.CustomException;
@@ -43,6 +44,7 @@ public class ReservationService {
     private final MemberRepository memberRepository;
     private final AccommodationRepository accommodationRepository;
     private final MessageProducer messageProducer;
+    private final ChatService chatService;
 
     /**
      * 예약 생성
@@ -83,6 +85,10 @@ public class ReservationService {
 
         // 6. 저장
         Reservation saveReservation = reservationRepository.save(reservation);
+
+        // 7. 채팅방 자동 생성 (예약 완료 즉시 호스트-게스트 채팅방 개설)
+        chatService.createChatRoomForReservation(saveReservation);
+        log.info("채팅방 자동 생성: reservationId={}", saveReservation.getReservationId());
 
         EmailMessage guestEmail = buildGuestConfirmationEmail(saveReservation);
         NotificationMessage guestNotification = buildGuestConfirmationNotification(saveReservation);

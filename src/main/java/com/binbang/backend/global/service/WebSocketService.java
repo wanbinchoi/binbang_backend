@@ -65,9 +65,10 @@ public class WebSocketService {
      */
     public void sendChatMessage(Long memberId, ChatMessageResponse message) {
         try {
-            // /topic/chat/{memberId} 채널로 메시지 전송
+            // /queue/chat/{memberId} 채널로 메시지 전송
+            // /queue: 특정 1명에게만 전달하는 1:1 경로
             messagingTemplate.convertAndSend(
-                    "/topic/chat/" + memberId,
+                    "/queue/chat/" + memberId,
                     message
             );
 

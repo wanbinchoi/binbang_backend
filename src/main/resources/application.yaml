@@ -112,7 +112,7 @@ cloud:
     region:
       static: ap-northeast-2
     s3:
-      bucket: image-binbang
+      bucket: image-binbang-upload
 
 kakao:
   rest-api-key: ${KAKAO_REST_API_KEY}
